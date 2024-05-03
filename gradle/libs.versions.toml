@@ -1,0 +1,68 @@
+[versions]
+agp = "8.4.0"
+kotlin = "1.9.0"
+googleServices = "4.4.1"
+coreKtx = "1.13.0"
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
+lifecycleRuntimeKtx = "2.7.0"
+activityCompose = "1.9.0"
+composeBom = "2024.04.01"
+koin = "3.5.3"
+navigation = "2.7.7"
+viewModel = "2.7.0"
+datastore = "1.0.0"
+playServicesMaps = "18.2.0"
+playServicesLocation = "21.2.0"
+playServicesAuth = "21.1.0"
+googlemaps = "4.3.3"
+fireBase = "32.8.1"
+credentials = "1.3.0-alpha03"
+googleId = "1.1.0"
+androidxCredentials = "1.3.0-alpha03"
+glideCompose = "1.0.0-beta01"
+glideCompiler = "4.14.2"
+composeMaterial = "1.3.1"
+
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-credential = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+insert-koin = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }
+androidx-material-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
+androidx-lifecycle-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "viewModel" }
+androidx-lifecycle-runtime = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "viewModel" }
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+androidx-play-services-credential = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "androidxCredentials" }
+google-android-play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
+google-android-play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+google-android-play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
+google-android-maps = { group = "com.google.maps.android", name = "maps-compose", version.ref = "googlemaps" }
+google-android-maps-utils = { group = "com.google.maps.android", name = "maps-compose-utils", version.ref = "googlemaps" }
+google-android-identity-googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleId" }
+google-firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+google-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "fireBase" }
+google-firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+google-firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
+glide-compose = { group = "com.github.bumptech.glide", name = "compose", version.ref = "glideCompose" }
+glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glideCompiler" }
+androidx-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "composeMaterial" }
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+googleServices = { id = "com.google.gms.google-services" , version.ref = "googleServices" }

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Suggerimento barra di ricerca -->
+    <string name="search_hint">Cerca qui</string>
+
+    <!-- Nomi per filtri -->
+    <string name="crags">Falesie</string>
+    <string name="indoor">Al chiuso</string>
+    <string name="multipitches">Vie lunghe</string>
+    <string name="bouldering">Bouldering</string>
+
+    <!-- Elementi di navigazione -->
+    <string name="map">Mappa</string>
+    <string name="saved">Salvati</string>
+    <string name="profile">Profilo</string>
+
+    <!-- Permisison -->
+    <string name="permisison_denied">Permesso negato</string>
+    <string name="location_denied_description">Consenti alla localizzazione per trovare cosa c\'è intorno a te.</string>
+    <string name="confirm">Conferma</string>
+    <string name="dismiss">Respingi</string>
+    <string name="location_disabled_title">Posizione disabilitata</string>
+    <string name="location_disabled_text">Si prega di abilitare il servizio di localizzazione.</string>
+    <string name="open_settings">Apri impostazioni</string>
+    <string name="location_permanently_denied">La localizzazione è stata negata.</string>
+    <string name="routes">Vie</string>
+    <string name="rock_type">Tipo di roccia</string>
+    <string name="grade">Grado</string>
+    <string name="style">Stile</string>
+    <string name="status">Stato</string>
+    <string name="length">Lunghezza</string>
+    <string name="bolts">Numero di chiodi</string>
+    <string name="anchor">Catena</string>
+    <string name="yes">si</string>
+    <string name="difficulty">Difficoltà</string>
+    <string name="pitches">Numero di tiri</string>
+    <string name="route_count">Numero di route</string>
+    <string name="opening_hour">Orario di apertura</string>
+    <string name="duration">Durata</string>
+    <string name="visit_website">Vai al sito web</string>
+    <string name="navigate_to">Apri nella mappa</string>
+    <string name="no_internet_connection">Nessuna connessione internet, impossibile aggiornare le posizioni</string>
+    <string name="email_psw_empy">L\'email o la password sono vuoti</string>
+    <string name="email_not_valid">Email non valida</string>
+    <string name="psw_short">La password deve essere di almeno 6 caratteri</string>
+    <string name="theme_dark">Scuro</string>
+    <string name="theme_light">Chiaro</string>
+    <string name="theme_system">Sistema</string>
+    <string name="settings">Impostazioni</string>
+    <string name="enter_email">Inserisci la mail</string>
+    <string name="enter_old_password">Inserisci la vecchia password</string>
+    <string name="old_password">Vecchia password</string>
+    <string name="new_password">Nuova password</string>
+    <string name="enter_new_password">Inserisci la nuova password</string>
+    <string name="email_set_to">Un email verrà mandata a</string>
+    <string name="reset_password">Password reset</string>
+    <string name="cancel">Annulla</string>
+    <string name="send">Invia</string>
+    <string name="password_forgot">Dimenticata la password?</string>
+    <string name="change_password">Cambia password</string>
+    <string name="edit_profile">Modifica profilo</string>
+    <string name="register">Registrati</string>
+    <string name="no_account">Non hai un profilo?</string>
+    <string name="please_login">Fai il login per continuare</string>
+    <string name="enter_password">Inserisci la tua password</string>
+    <string name="required_login">Login necessario</string>
+    <string name="no_login">Non hai effettuato l\'accesso.</string>
+    <string name="saved_locations">Se vuoi salvare i tuoi posti preferiti devi accedere.</string>
+    <string name="location_not_saved">Posto non salvato</string>
+    <string name="saved_locations_title">Posti salvati</string>
+    <string name="password_updated">Password aggiornata</string>
+    <string name="no_saved_locations">Non ci sono ancora posti salvati.</string>
+    <string name="explore">Esplora</string>
+    <string name="location_saved">Posto salvato</string>
+    <string name="location_removed">Rimosso dai salvati</string>
+    <string name="crag">Falesia</string>
+    <string name="multipitch">Via lunga</string>
+    <string name="share_location">Ehi, dai un\'occhiata a questo bel posto che ho trovato su ClimbTime!</string>
+    <string name="delete">Cancella</string>
+    <string name="undo">Annulla</string>
+    <string name="user">Utente</string>
+    <string name="delete_account">Elimina account</string>
+    <string name="delete_account_message">Inserisci la password per confermare.</string>
+    <string name="theme">Tema</string>
+    <string name="email_empty">Campo email vuoto.</string>
+    <string name="email_invalid">non è valida.</string>
+    <string name="camera_permantely_denied">Impossibile aprire la camera, permesso negato.</string>
+</resources>

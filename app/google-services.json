@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "983308591118",
+    "project_id": "climb-time-843e3",
+    "storage_bucket": "climb-time-843e3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:983308591118:android:6552117c03ac0f27549c5f",
+        "android_client_info": {
+          "package_name": "com.example.climbtime"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "983308591118-410svakejitl7m6ibpf2gpqqda7rmq2d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtudthOUwK9lR3MU-svEd7hWSvkmoqpmI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "983308591118-410svakejitl7m6ibpf2gpqqda7rmq2d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

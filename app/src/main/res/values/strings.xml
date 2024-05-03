@@ -1,0 +1,95 @@
+<resources>
+    <string name="app_name" translatable="false">ClimbTime</string>
+
+    <!-- Search hint -->
+    <string name="search_hint">Search here</string>
+
+    <!-- Filter item name -->
+    <string name="crags">Crags</string>
+    <string name="indoor">Indoor</string>
+    <string name="multipitches">Multipitches</string>
+    <string name="bouldering">Bouldering</string>
+    <string name="vie_ferrate" translatable="false">Vie ferrate</string>
+
+    <!-- Navigation items -->
+    <string name="map">Map</string>
+    <string name="saved">Saved</string>
+    <string name="profile">Profile</string>
+    <string name="permisison_denied">Permission denied</string>
+    <string name="location_denied_description">Allow location to better find what\'s near you.</string>
+    <string name="confirm">Confirm</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="location_disabled_title">Location disabled</string>
+    <string name="location_disabled_text">Please enable location service.</string>
+    <string name="open_settings">Open settings</string>
+    <string name="location_permanently_denied">Location permission is permanently denied.</string>
+    <string name="routes">Routes</string>
+    <string name="rock_type">Rock type</string>
+    <string name="grade">Grade</string>
+    <string name="style">Style</string>
+    <string name="status">Status</string>
+    <string name="length">Length</string>
+    <string name="bolts">Number of bolts</string>
+    <string name="anchor">Anchor</string>
+    <string name="yes">yes</string>
+    <string name="no" translatable="false">no</string>
+    <string name="difficulty">Difficulty</string>
+    <string name="pitches">Number of pitches</string>
+    <string name="route_count">Number of routes</string>
+    <string name="opening_hour">Opening hour</string>
+    <string name="duration">Duration</string>
+    <string name="visit_website">Visit the website</string>
+    <string name="navigate_to">Open on the map</string>
+    <string name="no_internet_connection">No internet connection, unable to update locations</string>
+    <string name="email_psw_empy">Email or password is empty</string>
+    <string name="email_not_valid">Email is not valid</string>
+    <string name="psw_short">Password should be at least 6 characters</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_system">System</string>
+    <string name="settings">Settings</string>
+    <string name="email" translatable="false">Email</string>
+    <string name="enter_email">Enter your email</string>
+    <string name="enter_old_password">Enter old password</string>
+    <string name="old_password">Old password</string>
+    <string name="new_password">New password</string>
+    <string name="enter_new_password">Enter new password</string>
+    <string name="email_set_to">An email will be sent to</string>
+    <string name="reset_password">Reset password</string>
+    <string name="cancel">Cancel</string>
+    <string name="send">Send</string>
+    <string name="password_forgot">Forgot your password?</string>
+    <string name="change_password">Change password</string>
+    <string name="edit_profile">Edit profile</string>
+    <string name="login" translatable="false">Login</string>
+    <string name="register">Register</string>
+    <string name="no_account">Don\'t have an account?</string>
+    <string name="please_login">Please login to continue</string>
+    <string name="enter_password">Enter your password</string>
+    <string name="password" translatable="false">Password</string>
+    <string name="required_login">Login required</string>
+    <string name="no_login">You are not logged in.</string>
+    <string name="saved_locations">If you want to save your favorite locations you must be logged in.</string>
+    <string name="location_not_saved">Location not saved</string>
+    <string name="saved_locations_title">Saved locations</string>
+    <string name="password_updated">Password updated</string>
+    <string name="no_saved_locations">There are no saved places.</string>
+    <string name="explore">Explore</string>
+    <string name="location_saved">Location saved</string>
+    <string name="location_removed">Removed from saved</string>
+    <string name="crag">Crag</string>
+    <string name="multipitch">Multipitch</string>
+    <string name="via_ferrata" translatable="false">Via ferrata</string>
+    <string name="share_location">Hey, check out this cool place I found on ClimbTime!</string>
+    <string name="delete">Delete</string>
+    <string name="undo">Undo</string>
+    <string name="user">User</string>
+    <string name="logout" translatable="false">Logout</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_message">Enter your password for confirmation.</string>
+    <string name="theme">Color theme</string>
+    <string name="email_empty">Email field is empty.</string>
+    <string name="email_invalid">is not valid.</string>
+    <string name="camera_permantely_denied">Camera permission is denid, unable to open camera.</string>
+    <string name="account" translatable="false">Account</string>
+</resources>
