@@ -1,24 +1,21 @@
 package com.example.climbtime.ui.viewmodel
 
 import android.net.Uri
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.climbtime.data.repository.UserRepository
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 data class UserState(
     val user: MutableState<FirebaseUser?> = mutableStateOf(null),
-    val savedLocation: StateFlow<List<String>> = MutableStateFlow(emptyList()),
-    val imageUri: StateFlow<Uri> = MutableStateFlow(Uri.EMPTY)
+    val savedLocation: MutableStateFlow<List<String>> = MutableStateFlow(listOf()),
+    val imageUri: MutableState<Uri> = mutableStateOf(Uri.EMPTY)
 )
 
 interface UserActions {
@@ -28,6 +25,7 @@ interface UserActions {
     fun resetPassword(email: String, callback: (Boolean, String) -> Unit)
     fun deleteAccount(email: String, password: String, callback: (Boolean, String) -> Unit)
     fun uploadImage(uri: Uri)
+    fun getImage()
     fun removeImage()
     fun changePassword(
         email: String, password: String, newPassword: String, callback: (Boolean, String) -> Unit
@@ -41,18 +39,8 @@ class UserViewModel(
     private val repository: UserRepository
 ) : ViewModel() {
 
-    private val imageUri = repository.userImageUri.map {
-        Uri.parse(it)
-    }.stateIn(
-        scope = viewModelScope, started = SharingStarted.WhileSubscribed(), initialValue = Uri.EMPTY
-    )
-    private val savedLocation = repository.savedLocations.map {
-        it.split(",")
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(),
-        initialValue = emptyList()
-    )
+    private val imageUri = repository.userImageUri
+    private val savedLocation = repository.savedLocations
     val state = UserState(
         user = repository.user, savedLocation = savedLocation, imageUri = imageUri
     )
@@ -86,7 +74,9 @@ class UserViewModel(
             repository.logout()
         }
 
-        override fun deleteAccount(email: String, password: String, callback: (Boolean, String) -> Unit) {
+        override fun deleteAccount(
+            email: String, password: String, callback: (Boolean, String) -> Unit
+        ) {
             repository.deleteAccount(email, password, callback)
         }
 
@@ -96,9 +86,15 @@ class UserViewModel(
             }
         }
 
+        override fun getImage() {
+            viewModelScope.launch {
+                repository.getUserImageUri()
+            }
+        }
+
         override fun removeImage() {
             viewModelScope.launch {
-                repository.clearUserImageUri()
+                repository.deleteUserImage()
             }
         }
 

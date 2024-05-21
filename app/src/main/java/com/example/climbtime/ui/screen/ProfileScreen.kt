@@ -135,6 +135,7 @@ fun ProfileScreen(
                 snackBarHostState = snackBarHostState
             )
         } else {
+            userAction.getImage()
             if (editProfile) {
                 EditProfile(
                     userState = userState,
@@ -190,7 +191,7 @@ fun EditProfile(
     snackBarHostState: SnackbarHostState
 ) {
     val context = LocalContext.current
-    val imageUri = userState.imageUri.collectAsState().value
+    val imageUri = userState.imageUri.value
     val keyboardController = LocalSoftwareKeyboardController.current
     var showSnack by remember { mutableStateOf(false) }
     var openSettings by remember { mutableStateOf(false) }
@@ -578,7 +579,7 @@ fun ProfileImage(
 fun UserLoggedIn(
     userState: UserState, onLogout: () -> Unit, modifier: Modifier = Modifier
 ) {
-    val imageUri = userState.imageUri.collectAsState().value
+    val imageUri = userState.imageUri.value
     Log.d("UserLoggedIn", "Image URI: $imageUri")
     Column(
         modifier = modifier

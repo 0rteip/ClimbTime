@@ -25,7 +25,6 @@ fun ClimbTimeNavBar(navController: NavHostController, currentRoute: ClimbTimeRou
     val items = BottomNavItem.items
 
     LaunchedEffect(currentRoute) {
-        Log.d("ClimbTimeNavBar", "currentRoute: $currentRoute")
         when (currentRoute) {
             is ClimbTimeRoute.Home -> {
                 selectedItem = 0

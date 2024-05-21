@@ -104,6 +104,7 @@ dependencies {
 
     // Credentials
     implementation(libs.androidx.credential)
+    implementation(libs.androidx.credential.auth)
     // optional - needed for credentials support from play services, for devices running
     // Android 13 and below.
     implementation(libs.androidx.play.services.credential)
@@ -116,12 +117,13 @@ dependencies {
     implementation(libs.google.firebase.analytics)
     implementation(libs.google.firebase.firestore)
 
+    implementation(libs.google.firebase.storage)
+
     // Glide
     implementation(libs.glide.compose)
     implementation(libs.androidx.compose.material)
     kapt(libs.glide.compiler)
-
-
+    
     // Firebase auth
     implementation(libs.google.firebase.auth)
 

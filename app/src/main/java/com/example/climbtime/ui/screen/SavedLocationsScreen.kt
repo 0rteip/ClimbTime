@@ -2,8 +2,12 @@ package com.example.climbtime.ui.screen
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -22,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -77,6 +82,7 @@ import com.example.climbtime.ui.component.mediumDP
 import com.example.climbtime.ui.component.smallDP
 import com.example.climbtime.ui.viewmodel.UserActions
 import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -175,10 +181,12 @@ fun SavedLocations(
     var location by rememberSaveable {
         mutableStateOf("")
     }
+    val isDeleteMap = remember { mutableMapOf<String, MutableState<Boolean>>() }
+
+
     LaunchedEffect(showSnackBar) {
         if (showSnackBar) {
             snackBarHostState.currentSnackbarData?.dismiss()
-
             res = snackBarHostState.showSnackbar(
                 message = context.getString(R.string.location_removed),
                 actionLabel = context.getString(R.string.undo),
@@ -186,11 +194,11 @@ fun SavedLocations(
             )
             if (res == SnackbarResult.ActionPerformed) {
                 userActions.saveLocation(location)
+                isDeleteMap[location]?.value = false  // Aggiungi questa linea
             }
             showSnackBar = false
         }
     }
-
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -199,7 +207,10 @@ fun SavedLocations(
         horizontalAlignment = Alignment.CenterHorizontally,
         contentPadding = PaddingValues(bottom = largeDP)
     ) {
-        items(savedLocation) { route ->
+
+        //uniq key for each item
+        items(savedLocation, key = { it }) { route ->
+            val isDelete = isDeleteMap.getOrPut(route) { mutableStateOf(false) }
             if (route.isNotEmpty()) {
                 val split = route.split("/")
                 val place = allPLaces.firstOrNull { place ->
@@ -209,26 +220,32 @@ fun SavedLocations(
                 ItemInfoRow(place = place,
                     navController = navController,
                     route = route,
+                    isDelet = isDelete,
                     onDelete = {
-                        userActions.removeLocation(route)
-                        showSnackBar = true
                         location = route
+                        showSnackBar = true
+                        userActions.removeLocation(route)
                     })
             }
         }
+
     }
 }
 
 @OptIn(ExperimentalWearMaterialApi::class)
 @Composable
 fun ItemInfoRow(
-    place: Place, navController: NavHostController, route: String, onDelete: () -> Unit
+    place: Place,
+    navController: NavHostController,
+    route: String,
+    onDelete: () -> Unit,
+    isDelet: MutableState<Boolean>
 ) {
     val context = LocalContext.current
     val swipeableState = rememberSwipeableState(SwipeState.NoAction)
     val vibrator = VibratorHelper.from(context)
     var hasVibrated by rememberSaveable { mutableStateOf(false) }
-    var isDelete by rememberSaveable { mutableStateOf(false) }
+    var isDelete by rememberSaveable { isDelet }
 
     val anchors = mapOf(0f to SwipeState.NoAction,
         LocalDensity.current.run { with(LocalConfiguration.current) { screenWidthDp.dp.toPx() } } to SwipeState.ActionPerformed)
@@ -244,12 +261,12 @@ fun ItemInfoRow(
     )
 
     LaunchedEffect(swipeableState.offset.value) {
-        val swipeValue = swipeableState.offset.value
-        val maxSwipe = anchors.keys.maxOrNull() ?: 0f
-
         if (isDelete) {
             return@LaunchedEffect
         }
+
+        val swipeValue = swipeableState.offset.value
+        val maxSwipe = anchors.keys.maxOrNull() ?: 0f
 
         if (!hasVibrated && swipeValue >= maxSwipe / 5) {
             vibrator?.vibrate(10)
@@ -259,7 +276,18 @@ fun ItemInfoRow(
         }
     }
 
-    if (!isDelete) {
+
+    LaunchedEffect(swipeableState.currentValue) {
+        when (swipeableState.currentValue) {
+            SwipeState.ActionPerformed -> {
+                isDelete = true
+            }
+
+            SwipeState.NoAction -> {}
+        }
+    }
+
+    AnimatedVisibility(visible = !isDelete, enter = fadeIn(), exit = fadeOut()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -322,23 +350,6 @@ fun ItemInfoRow(
                     }
                 }
 
-                // Aggiungi un SideEffect per eseguire un'azione quando lo stato cambia
-                LaunchedEffect(swipeableState.currentValue) {
-                    when (swipeableState.currentValue) {
-                        SwipeState.ActionPerformed -> {
-                            if (!isDelete) {
-                                onDelete()
-                            }
-                            isDelete = true
-                            swipeableState.animateTo(SwipeState.NoAction)
-                        }
-
-                        SwipeState.NoAction -> {
-                            isDelete = false
-                        }
-                    }
-                }
-
                 ItemInfoWithLocationSwipe(title = place.name,
                     value = FilterItem.items.find { filter -> filter.filterName == place.type }?.nameResourcesId?.let { id ->
                         stringResource(id = id)
@@ -351,6 +362,14 @@ fun ItemInfoRow(
                     shareIntent = shareIntent
                 )
             }
+        }
+    }
+
+    LaunchedEffect(isDelete) {
+        if (isDelete) {
+            delay(300)
+            onDelete()
+            swipeableState.snapTo(SwipeState.NoAction)
         }
     }
 }

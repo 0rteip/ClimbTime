@@ -11,6 +11,7 @@ import com.example.climbtime.ui.viewmodel.UserViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -21,11 +22,14 @@ val appModule = module {
     // Firebase
     factory { Firebase.firestore }
     factory { Firebase.auth }
+    factory { Firebase.storage }
+
     // DataStore
     single { get<Context>().dataStore }
+
     // Repository
     single { HomeRepository(get(), get()) }
-    single { UserRepository(get(), get(), androidContext()) }
+    single { UserRepository(get(), get(), get(), androidContext()) }
     single { SettingsRepository(get()) }
 
     //ViewModel

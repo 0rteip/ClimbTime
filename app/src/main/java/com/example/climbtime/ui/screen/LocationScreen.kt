@@ -35,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.climbtime.R
 import com.example.climbtime.data.model.FilterItem
@@ -47,7 +46,6 @@ import com.example.climbtime.data.model.place.Place
 import com.example.climbtime.data.model.place.ViaFerrata
 import com.example.climbtime.ui.ClimbTimeRoute
 import com.example.climbtime.ui.component.largeDP
-import com.example.climbtime.ui.component.mediumDP
 import com.example.climbtime.ui.component.smallDP
 import com.example.climbtime.ui.screen.location.BoulderingScreen
 import com.example.climbtime.ui.screen.location.CragScreen
@@ -56,6 +54,7 @@ import com.example.climbtime.ui.screen.location.MultipitchScreen
 import com.example.climbtime.ui.screen.location.ViaFerrataScreen
 import com.example.climbtime.ui.viewmodel.UserActions
 import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

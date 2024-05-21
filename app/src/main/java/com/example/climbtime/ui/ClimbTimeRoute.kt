@@ -1,6 +1,5 @@
 package com.example.climbtime.ui
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -87,7 +86,7 @@ fun NavGraph(
     val homeState by homeViewModel.state.collectAsStateWithLifecycle()
 
     val userViewModel = koinViewModel<UserViewModel>()
-    val savedLocation by userViewModel.state.savedLocation.collectAsStateWithLifecycle()
+    val savedLocation = userViewModel.state.savedLocation
 
     NavHost(
         navController = navController,
@@ -111,7 +110,7 @@ fun NavGraph(
                 SavedLocationsScreen(
                     navController = navController,
                     user = userViewModel.state.user,
-                    savedLocation = savedLocation,
+                    savedLocation = savedLocation.collectAsState().value,
                     allPLaces = homeState.allPlaces.collectAsState().value,
                     userActions = userViewModel.actions
                 )
@@ -142,7 +141,7 @@ fun NavGraph(
 
         with(ClimbTimeRoute.Location) {
             composable(route, arguments = arguments) { backStackEntry ->
-                Log.d("ClimbTimeRoute", "Location composable, backStackEntry: $backStackEntry")
+//                Log.d("ClimbTimeRoute", "Location composable, backStackEntry: $backStackEntry")
                 val locationType = backStackEntry.arguments?.getString("locationType")
                 val locationId = backStackEntry.arguments?.getString("locationId")
                 val locationName = backStackEntry.arguments?.getString("locationName")
@@ -162,14 +161,14 @@ fun NavGraph(
                     place = location,
                     user = userViewModel.state.user,
                     userActions = userViewModel.actions,
-                    savedLocation = savedLocation
+                    savedLocation = savedLocation.collectAsStateWithLifecycle().value
                 )
             }
         }
 
         with(ClimbTimeRoute.Route) {
             composable(route, arguments = arguments) { backStackEntry ->
-                Log.d("ClimbTimeRoute", "Route composable, backStackEntry: $backStackEntry")
+//                Log.d("ClimbTimeRoute", "Route composable, backStackEntry: $backStackEntry")
                 val locationType = backStackEntry.arguments?.getString("locationType")
                 val locationId = backStackEntry.arguments?.getString("locationId")
                 val locationName = backStackEntry.arguments?.getString("locationName")
