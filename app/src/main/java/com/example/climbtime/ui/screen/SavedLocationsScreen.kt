@@ -101,6 +101,28 @@ fun SavedLocationsScreen(
         if (user.value == null) {
             UserNotLoggedInScreen(navController = navController)
         } else {
+            val context = LocalContext.current
+            var showSnackBar by rememberSaveable { mutableStateOf(false) }
+            var res by rememberSaveable { mutableStateOf<SnackbarResult?>(null) }
+            var location by rememberSaveable { mutableStateOf("") }
+            val isDeleteMap = remember { mutableMapOf<String, MutableState<Boolean>>() }
+
+            LaunchedEffect(showSnackBar) {
+                if (showSnackBar) {
+                    snackBarHostState.currentSnackbarData?.dismiss()
+                    res = snackBarHostState.showSnackbar(
+                        message = context.getString(R.string.location_removed),
+                        actionLabel = context.getString(R.string.undo),
+                        duration = SnackbarDuration.Short
+                    )
+                    if (res == SnackbarResult.ActionPerformed) {
+                        userActions.saveLocation(location)
+                        isDeleteMap[location]?.value = false  // Aggiungi questa linea
+                    }
+                    showSnackBar = false
+                }
+            }
+
             if (savedLocation.isEmpty() || savedLocation.size == 1 && savedLocation[0].isEmpty()) {
                 NoSavedLocation(
                     navController = navController, modifier = Modifier.padding(pd)
@@ -111,8 +133,12 @@ fun SavedLocationsScreen(
                     savedLocation = savedLocation,
                     modifier = Modifier.padding(pd),
                     navController = navController,
-                    snackBarHostState = snackBarHostState,
-                    userActions = userActions
+                    isDeleteMap = isDeleteMap,
+                    onDeleted = {
+                        location = it
+                        showSnackBar = true
+                        userActions.removeLocation(it)
+                    }
                 )
             }
         }
@@ -167,38 +193,10 @@ fun SavedLocations(
     modifier: Modifier,
     navController: NavHostController,
     allPLaces: List<Place>,
-    snackBarHostState: SnackbarHostState,
-    userActions: UserActions
+    isDeleteMap: MutableMap<String, MutableState<Boolean>>,
+    onDeleted: (String) -> Unit,
 ) {
-    val context = LocalContext.current
 
-    var res by rememberSaveable {
-        mutableStateOf<SnackbarResult?>(null)
-    }
-    var showSnackBar by rememberSaveable {
-        mutableStateOf(false)
-    }
-    var location by rememberSaveable {
-        mutableStateOf("")
-    }
-    val isDeleteMap = remember { mutableMapOf<String, MutableState<Boolean>>() }
-
-
-    LaunchedEffect(showSnackBar) {
-        if (showSnackBar) {
-            snackBarHostState.currentSnackbarData?.dismiss()
-            res = snackBarHostState.showSnackbar(
-                message = context.getString(R.string.location_removed),
-                actionLabel = context.getString(R.string.undo),
-                duration = SnackbarDuration.Short
-            )
-            if (res == SnackbarResult.ActionPerformed) {
-                userActions.saveLocation(location)
-                isDeleteMap[location]?.value = false  // Aggiungi questa linea
-            }
-            showSnackBar = false
-        }
-    }
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -222,9 +220,7 @@ fun SavedLocations(
                     route = route,
                     isDelet = isDelete,
                     onDelete = {
-                        location = route
-                        showSnackBar = true
-                        userActions.removeLocation(route)
+                        onDeleted(route)
                     })
             }
         }
