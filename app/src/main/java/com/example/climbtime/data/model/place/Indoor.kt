@@ -16,7 +16,8 @@ data class Indoor(
     override val location: Location,
     override val description: String,
     val openingHours: String,
-    val website: String
+    val website: String,
+    val closingHours: String
 ) : Place {
     override val type: String = FilterItem.Indoor.filterName
 }
