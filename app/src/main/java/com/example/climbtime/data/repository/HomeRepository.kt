@@ -2,6 +2,7 @@ package com.example.climbtime.data.repository
 
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.intl.Locale
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -29,6 +30,12 @@ class HomeRepository(
         private val LAST_POSITION_KEY = stringPreferencesKey("last_position")
         private val LAST_ZOOM_KEY = stringPreferencesKey("last_zoom")
         private const val TAG = "HomeRepository"
+    }
+
+    val currentLanguage = if (Locale.current.language in listOf("en", "it")) {
+        Locale.current.language
+    } else {
+        "en"
     }
 
     val filters = dataStore.data.map {
@@ -95,24 +102,26 @@ class HomeRepository(
         if (allPlaces.value.isEmpty()) {
             FilterItem.items.filter { it != null }.forEach {
 //                Log.d(TAG, "filterName: ${it.filterName}")
-                firestore.collection(it.filterName).get().addOnSuccessListener { result ->
-                    for (document in result) {
-                        // if the place is not in the list, add it
-                        if (allPlaces.value.none { place -> place.id == document.id }) {
-                            allPlaces.value =
-                                allPlaces.value.plus(fromDocument(document, it.filterName))
-                        }
-                    }
 
-                    // se ultimo filtro
-                    if (filters.size == 1 && filters[0] == "") {
+                firestore.collection(it.filterName + "_" + this.currentLanguage).get()
+                    .addOnSuccessListener { result ->
+                        for (document in result) {
+                            // if the place is not in the list, add it
+                            if (allPlaces.value.none { place -> place.id == document.id }) {
+                                allPlaces.value =
+                                    allPlaces.value.plus(fromDocument(document, it.filterName))
+                            }
+                        }
+
+                        // se ultimo filtro
+                        if (filters.size == 1 && filters[0] == "") {
 //                        Log.d(TAG, "filters: $filters, adding all places")
-                        places.value = allPlaces.value
-                    } else {
+                            places.value = allPlaces.value
+                        } else {
 //                        Log.d(TAG, "filters: $filters, filtering places")
-                        places.value = allPlaces.value.filter { place -> place.type in filters }
-                    }
-                }.addOnFailureListener { exception ->
+                            places.value = allPlaces.value.filter { place -> place.type in filters }
+                        }
+                    }.addOnFailureListener { exception ->
                     Log.w(TAG, "Error getting documents.", exception)
                 }
             }
