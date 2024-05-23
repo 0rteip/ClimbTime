@@ -92,4 +92,5 @@
     <string name="email_invalid">is not valid.</string>
     <string name="camera_permantely_denied">Camera permission is denid, unable to open camera.</string>
     <string name="account" translatable="false">Account</string>
+    <string name="closing_hour">Closing hour</string>
 </resources>

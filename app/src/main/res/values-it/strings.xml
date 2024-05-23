@@ -85,4 +85,5 @@
     <string name="email_empty">Campo email vuoto.</string>
     <string name="email_invalid">non è valida.</string>
     <string name="camera_permantely_denied">Impossibile aprire la camera, permesso negato.</string>
+    <string name="closing_hour">Orario di chiusura</string>
 </resources>

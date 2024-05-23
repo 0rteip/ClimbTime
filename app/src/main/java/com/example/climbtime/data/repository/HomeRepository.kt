@@ -110,6 +110,7 @@ class HomeRepository(
                             if (allPlaces.value.none { place -> place.id == document.id }) {
                                 allPlaces.value =
                                     allPlaces.value.plus(fromDocument(document, it.filterName))
+                                Log.d("filer", it.filterName)
                             }
                         }
 
@@ -170,6 +171,7 @@ class HomeRepository(
                     ),
                     description = document.data["description"] as String,
                     openingHours = document.data["opening_hours"] as String,
+                    closingHours = document.data["closing_hours"] as String,
                     website = document.data["website"] as String,
                 )
             }
@@ -221,7 +223,7 @@ class HomeRepository(
 
             FilterItem.Crag.filterName -> {
                 val routes = mutableListOf<Route>()
-                firestore.collection("$type/${document.id}/routes").get()
+                firestore.collection("${type}_${this.currentLanguage}/${document.id}/routes").get()
                     .addOnSuccessListener { result ->
                         for (route in result) {
                             routes.add(routeFromDocument(route))

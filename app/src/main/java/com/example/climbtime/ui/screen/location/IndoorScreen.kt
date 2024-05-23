@@ -27,6 +27,7 @@ fun IndoorScreen(indoor: Indoor) {
 
     val info = listOf(
         Pair(stringResource(id = R.string.opening_hour), indoor.openingHours),
+        Pair(stringResource(id = R.string.closing_hour), indoor.closingHours)
     )
 
     LazyColumn(
