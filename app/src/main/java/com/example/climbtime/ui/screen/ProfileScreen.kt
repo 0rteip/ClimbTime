@@ -1,8 +1,13 @@
 package com.example.climbtime.ui.screen
 
+import android.Manifest
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
-import android.provider.Settings
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,7 +56,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,6 +74,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.navigation.NavHostController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -81,6 +89,7 @@ import com.example.climbtime.data.model.utils.rememberPermission
 import com.example.climbtime.data.model.utils.saveImageToStorage
 import com.example.climbtime.ui.ClimbTimeRoute
 import com.example.climbtime.ui.component.OpenSettings
+import com.example.climbtime.ui.component.PermissionDeniedAlert
 import com.example.climbtime.ui.component.largeDP
 import com.example.climbtime.ui.component.mediumDP
 import com.example.climbtime.ui.component.smallDP
@@ -156,8 +165,27 @@ fun ProfileScreen(
 
 @Composable
 fun ResetPasswordDialog(
-    onDismiss: () -> Unit, email: String, userAction: UserActions, context: android.content.Context
+    onDismiss: () -> Unit,
+    email: String,
+    userAction: UserActions,
+    context: Context,
+    snackBarHostState: SnackbarHostState
 ) {
+    CreateNotificationChannel()
+
+    val postPermission =
+        rememberPermission(permission = Manifest.permission.POST_NOTIFICATIONS) {
+        }
+    // create an intent to open email app on click on the notification
+    val emailIntent = Intent(Intent.ACTION_MAIN).apply {
+        addCategory(Intent.CATEGORY_APP_EMAIL)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+
+    val pendingIntent = PendingIntent.getActivity(
+        context, 0, emailIntent, PendingIntent.FLAG_IMMUTABLE
+    )
+
     AlertDialog(onDismissRequest = { onDismiss() },
         title = { Text(stringResource(id = R.string.reset_password)) },
         text = { Text(stringResource(id = R.string.email_set_to) + " $email") },
@@ -167,6 +195,28 @@ fun ResetPasswordDialog(
                     if (!result) {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     } else {
+                        var builder = NotificationCompat.Builder(
+                            context,
+                            context.getString(R.string.reset_password)
+                        )
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setContentTitle(context.getString(R.string.reset_password))
+                            .setContentText(context.getString(R.string.email_sent) + " $email")
+                            .setContentIntent(pendingIntent)
+                            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                            .setAutoCancel(true)
+
+                        with(NotificationManagerCompat.from(context)) {
+                            if (ActivityCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                notify(1, builder.build())
+                            } else {
+                                postPermission.launchPermissionRequest()
+                            }
+                        }
                         onDismiss()
                     }
                 }
@@ -181,6 +231,26 @@ fun ResetPasswordDialog(
                 Text(stringResource(id = R.string.cancel))
             }
         })
+}
+
+@Composable
+fun CreateNotificationChannel() {
+    // Create the NotificationChannel, but only on API 26+ because
+    // the NotificationChannel class is new and not in the support library
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val context = LocalContext.current
+        val name = context.getString(R.string.reset_password)
+        val descriptionText = context.getString(R.string.reset_password)
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = android.app.NotificationChannel(name, name, importance).apply {
+            description = descriptionText
+        }
+        // Register the channel with the system
+        val notificationManager: NotificationManager =
+            getSystemService(context, NotificationManager::class.java) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
+
 }
 
 @Composable
@@ -262,7 +332,8 @@ fun EditProfile(
             onDismiss = { showDialog = false },
             email = email,
             userAction = userAction,
-            context = context
+            context = context,
+            snackBarHostState = snackBarHostState
         )
     }
 
@@ -434,7 +505,8 @@ fun UserNotLoggedIn(
             onDismiss = { showDialog = false },
             email = email,
             userAction = userAction,
-            context = context
+            context = context,
+            snackBarHostState = snackBarHostState
         )
     }
 
