@@ -54,6 +54,7 @@ class UserRepository(
             if (task.isSuccessful) {
                 callback(true, auth.currentUser?.uid ?: "")
                 user.value = auth.currentUser
+                this.initializeSavedLocations()
             } else {
                 Log.e("UserRepository", "Failed to login: ${task.exception?.message}")
                 callback(false, task.exception?.message ?: "")
