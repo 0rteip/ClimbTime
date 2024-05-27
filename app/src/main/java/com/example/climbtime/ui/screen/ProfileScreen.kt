@@ -1,11 +1,13 @@
 package com.example.climbtime.ui.screen
 
-import android.app.NotificationChannel
+import android.Manifest
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -72,7 +74,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.navigation.NavHostController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -84,6 +89,7 @@ import com.example.climbtime.data.model.utils.rememberPermission
 import com.example.climbtime.data.model.utils.saveImageToStorage
 import com.example.climbtime.ui.ClimbTimeRoute
 import com.example.climbtime.ui.component.OpenSettings
+import com.example.climbtime.ui.component.PermissionDeniedAlert
 import com.example.climbtime.ui.component.largeDP
 import com.example.climbtime.ui.component.mediumDP
 import com.example.climbtime.ui.component.smallDP
@@ -97,44 +103,40 @@ data class LogState(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(userState: UserState, userAction: UserActions, navController: NavHostController) {
+fun ProfileScreen(
+    userState: UserState, userAction: UserActions, navController: NavHostController
+) {
     val snackBarHostState = remember { SnackbarHostState() }
     var editProfile by rememberSaveable { mutableStateOf(false) }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackBarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (editProfile) stringResource(R.string.edit_profile)
-                        else if (userState.user.value != null)
-                            stringResource(R.string.profile)
-                        else stringResource(R.string.login)
-                    )
-                },
-                actions = {
-                    if (userState.user.value != null && !editProfile) {
-                        IconButton(onClick = { editProfile = !editProfile }) {
-                            Icon(Icons.Filled.Edit, contentDescription = "Edit profile")
-                        }
-                    }
-                    if (!editProfile) {
-                        IconButton(
-                            onClick = {
-                                navController.navigate(ClimbTimeRoute.Settings.route)
-                            }
-                        ) { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
-                    }
-                    if (editProfile) {
-                        IconButton(onClick = { editProfile = !editProfile }) {
-                            Icon(Icons.Filled.Done, contentDescription = "Done")
-                        }
-                    }
-                }
+    Scaffold(snackbarHost = { SnackbarHost(snackBarHostState) }, topBar = {
+        TopAppBar(title = {
+            Text(
+                if (editProfile) stringResource(R.string.edit_profile) else if (userState.user.value != null) stringResource(
+                    R.string.profile
+                ) else stringResource(
+                    R.string.login
+                )
             )
-        }
-    ) { paddingValues ->
+
+        }, actions = {
+            if (userState.user.value != null && !editProfile) {
+                IconButton(onClick = { editProfile = !editProfile }) {
+                    Icon(Icons.Filled.Edit, contentDescription = "Edit profile")
+                }
+            }
+            if (!editProfile) {
+                IconButton(onClick = { navController.navigate(ClimbTimeRoute.Settings.route) }) {
+                    Icon(Icons.Filled.Settings, contentDescription = "Settings")
+                }
+            }
+            if (editProfile) {
+                IconButton(onClick = { editProfile = !editProfile }) {
+                    Icon(Icons.Filled.Done, contentDescription = "Done")
+                }
+            }
+        })
+    }) { paddingValues ->
         if (userState.user.value == null) {
             UserNotLoggedIn(
                 modifier = Modifier.padding(paddingValues),
@@ -166,73 +168,89 @@ fun ResetPasswordDialog(
     onDismiss: () -> Unit,
     email: String,
     userAction: UserActions,
-    context: android.content.Context
+    context: Context,
+    snackBarHostState: SnackbarHostState
 ) {
-    AlertDialog(
-        onDismissRequest = { onDismiss() },
+    CreateNotificationChannel()
+
+    val postPermission =
+        rememberPermission(permission = Manifest.permission.POST_NOTIFICATIONS) {
+        }
+    // create an intent to open email app on click on the notification
+    val emailIntent = Intent(Intent.ACTION_MAIN).apply {
+        addCategory(Intent.CATEGORY_APP_EMAIL)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+
+    val pendingIntent = PendingIntent.getActivity(
+        context, 0, emailIntent, PendingIntent.FLAG_IMMUTABLE
+    )
+
+    AlertDialog(onDismissRequest = { onDismiss() },
         title = { Text(stringResource(id = R.string.reset_password)) },
         text = { Text(stringResource(id = R.string.email_set_to) + " $email") },
         confirmButton = {
-            Button(
-                onClick = {
-                    userAction.resetPassword(email) { result, message ->
-                        if (!result) {
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                        } else {
-                            // create a notification
-                            val notificationId = 1
-                            val notificationChannelId = "reset_password_channel"
+            Button(onClick = {
+                userAction.resetPassword(email) { result, message ->
+                    if (!result) {
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    } else {
+                        var builder = NotificationCompat.Builder(
+                            context,
+                            context.getString(R.string.reset_password)
+                        )
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setContentTitle(context.getString(R.string.reset_password))
+                            .setContentText(context.getString(R.string.email_sent) + " $email")
+                            .setContentIntent(pendingIntent)
+                            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                            .setAutoCancel(true)
 
-                            val notificationBuilder =
-                                NotificationCompat.Builder(
+                        with(NotificationManagerCompat.from(context)) {
+                            if (ActivityCompat.checkSelfPermission(
                                     context,
-                                    notificationChannelId
-                                )
-                                    .setSmallIcon(R.mipmap.ic_launcher)
-                                    .setContentTitle("Reset Password")
-                                    .setContentText("Send a password reset email")
-                                    .setPriority(
-                                        NotificationCompat.PRIORITY_DEFAULT
-                                    )
-
-                            val notificationManager =
-                                context.getSystemService(
-                                    Context.NOTIFICATION_SERVICE
-                                ) as
-                                        NotificationManager
-
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                val name = "Reset Password Channel"
-                                val descriptionText =
-                                    "Channel for password reset notifications"
-                                val importance = NotificationManager.IMPORTANCE_DEFAULT
-                                val channel =
-                                    NotificationChannel(
-                                        notificationChannelId,
-                                        name,
-                                        importance
-                                    )
-                                        .apply { description = descriptionText }
-                                notificationManager.createNotificationChannel(channel)
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                notify(1, builder.build())
+                            } else {
+                                postPermission.launchPermissionRequest()
                             }
-
-                            notificationManager.notify(
-                                notificationId,
-                                notificationBuilder.build()
-                            )
-
-                            onDismiss()
                         }
+                        onDismiss()
                     }
                 }
-            ) { Text(stringResource(id = R.string.send)) }
+            }) {
+                Text(stringResource(id = R.string.send))
+            }
         },
         dismissButton = {
             TextButton(
                 onClick = { onDismiss() },
-            ) { Text(stringResource(id = R.string.cancel)) }
+            ) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        })
+}
+
+@Composable
+fun CreateNotificationChannel() {
+    // Create the NotificationChannel, but only on API 26+ because
+    // the NotificationChannel class is new and not in the support library
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val context = LocalContext.current
+        val name = context.getString(R.string.reset_password)
+        val descriptionText = context.getString(R.string.reset_password)
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = android.app.NotificationChannel(name, name, importance).apply {
+            description = descriptionText
         }
-    )
+        // Register the channel with the system
+        val notificationManager: NotificationManager =
+            getSystemService(context, NotificationManager::class.java) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
+
 }
 
 @Composable
@@ -254,6 +272,7 @@ fun EditProfile(
         Log.d("TakeImageOrSelectImage", "URI: $it")
     }
 
+
     if (openSettings) {
         OpenSettings()
     }
@@ -261,12 +280,11 @@ fun EditProfile(
     LaunchedEffect(showSnack) {
         if (showSnack) {
             snackBarHostState.currentSnackbarData?.dismiss()
-            val res =
-                snackBarHostState.showSnackbar(
-                    message = context.getString(R.string.camera_permantely_denied),
-                    actionLabel = context.getString(R.string.open_settings),
-                    duration = SnackbarDuration.Long
-                )
+            val res = snackBarHostState.showSnackbar(
+                message = context.getString(R.string.camera_permantely_denied),
+                actionLabel = context.getString(R.string.open_settings),
+                duration = SnackbarDuration.Long
+            )
             if (res == SnackbarResult.ActionPerformed) {
                 openSettings = true
             }
@@ -274,25 +292,23 @@ fun EditProfile(
         }
     }
 
-    val cameraPermission =
-        rememberPermission(permission = android.Manifest.permission.CAMERA) {
-            when (it) {
-                PermissionStatus.Unknown -> {}
-                PermissionStatus.Granted -> cameraLauncher.launchCamera()
-                PermissionStatus.Denied -> {
-                    Toast.makeText(
-                        context,
-                        context.getText(R.string.permisison_denied),
-                        Toast.LENGTH_SHORT
-                    )
-                        .show()
-                }
+    val cameraPermission = rememberPermission(
+        permission = android.Manifest.permission.CAMERA
+    ) {
+        when (it) {
+            PermissionStatus.Unknown -> {}
+            PermissionStatus.Granted -> cameraLauncher.launchCamera()
+            PermissionStatus.Denied -> {
+                Toast.makeText(
+                    context, context.getText(R.string.permisison_denied), Toast.LENGTH_SHORT
+                ).show()
+            }
 
-                PermissionStatus.PermanentlyDenied -> {
-                    showSnack = true
-                }
+            PermissionStatus.PermanentlyDenied -> {
+                showSnack = true
             }
         }
+    }
 
     fun takePicture() {
         if (cameraPermission.status.isGranted) {
@@ -302,10 +318,9 @@ fun EditProfile(
         }
     }
 
-    val launcher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
-            it?.let { userAction.uploadImage(it) }
-        }
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { it?.let { userAction.uploadImage(it) } }
 
     var email by rememberSaveable { mutableStateOf(userState.user.value?.email ?: "") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -317,7 +332,8 @@ fun EditProfile(
             onDismiss = { showDialog = false },
             email = email,
             userAction = userAction,
-            context = context
+            context = context,
+            snackBarHostState = snackBarHostState
         )
     }
 
@@ -325,34 +341,31 @@ fun EditProfile(
         modifier = modifier.padding(horizontal = largeDP),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(mediumDP)
+
     ) {
-        ChangeImage(imageUri = imageUri, takePicture = { takePicture() }, launcher = launcher)
+        ChangeImage(
+            imageUri = imageUri, takePicture = { takePicture() }, launcher = launcher
+        )
 
         Spacer(modifier = Modifier.size(largeDP))
 
-        EmailField(
-            email = email,
+        EmailField(email = email,
             label = stringResource(id = R.string.email),
             placeholder = stringResource(id = R.string.enter_email),
             isReadOnly = true,
-            onEmailChange = { email = it }
-        )
+            onEmailChange = { email = it })
 
         Spacer(modifier = Modifier.size(largeDP))
 
-        PasswordField(
-            password = oldPassword,
+        PasswordField(password = oldPassword,
             label = stringResource(id = R.string.old_password),
             placeholder = stringResource(id = R.string.enter_old_password),
-            onPasswordChange = { oldPassword = it }
-        )
+            onPasswordChange = { oldPassword = it })
 
-        PasswordField(
-            password = password,
+        PasswordField(password = password,
             label = stringResource(id = R.string.new_password),
             placeholder = stringResource(id = R.string.enter_new_password),
-            onPasswordChange = { password = it }
-        )
+            onPasswordChange = { password = it })
 
         Spacer(modifier = Modifier.size(largeDP))
 
@@ -364,17 +377,16 @@ fun EditProfile(
                     } else {
                         keyboardController?.hide()
                         Toast.makeText(
-                            context,
-                            context.getText(R.string.password_updated),
-                            Toast.LENGTH_SHORT
-                        )
-                            .show()
+                            context, context.getText(R.string.password_updated), Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = !(oldPassword.isEmpty() || password.isEmpty())
-        ) { Text(stringResource(id = R.string.change_password)) }
+        ) {
+            Text(stringResource(id = R.string.change_password))
+        }
 
         TextButton(onClick = { showDialog = true }) {
             Text(text = stringResource(id = R.string.password_forgot))
@@ -392,19 +404,14 @@ fun ChangeImage(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .wrapContentSize(),
-        contentAlignment = Alignment.TopCenter
+            .wrapContentSize(), contentAlignment = Alignment.TopCenter
     ) {
         ProfileImage(imageUri = imageUri, modifier = Modifier.align(Alignment.Center))
         IconButton(
             onClick = { takePicture() },
-            modifier =
-            Modifier
+            modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .background(
-                    MaterialTheme.colorScheme.primaryContainer,
-                    shape = CircleShape
-                )
+                .background(MaterialTheme.colorScheme.primaryContainer, shape = CircleShape)
         ) {
             Icon(
                 Icons.Filled.CameraAlt,
@@ -414,13 +421,10 @@ fun ChangeImage(
         }
         IconButton(
             onClick = { launcher.launch("image/*") },
-            modifier =
-            Modifier
+            modifier = Modifier
                 .align(Alignment.BottomStart)
-                .background(
-                    MaterialTheme.colorScheme.primaryContainer,
-                    shape = CircleShape
-                )
+                .background(MaterialTheme.colorScheme.primaryContainer, shape = CircleShape)
+
         ) {
             Icon(
                 Icons.Filled.Image,
@@ -463,36 +467,29 @@ fun PasswordField(
 ) {
     var isPasswordVisible by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
-        value = password,
+    OutlinedTextField(value = password,
         onValueChange = onPasswordChange,
         leadingIcon = { Icon(imageVector = Icons.Filled.Key, contentDescription = null) },
         trailingIcon = {
             IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                 Icon(
-                    imageVector =
-                    if (isPasswordVisible) Icons.Filled.VisibilityOff
-                    else Icons.Filled.Visibility,
+                    imageVector = if (isPasswordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
                     contentDescription = null
                 )
             }
         },
         singleLine = true,
-        visualTransformation =
-        if (isPasswordVisible) VisualTransformation.None
-        else PasswordVisualTransformation(),
+        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        placeholder = { Text(placeholder) }
-    )
+        placeholder = { Text(placeholder) })
+
 }
 
 @Composable
 fun UserNotLoggedIn(
-    modifier: Modifier = Modifier,
-    userAction: UserActions,
-    snackBarHostState: SnackbarHostState
+    modifier: Modifier = Modifier, userAction: UserActions, snackBarHostState: SnackbarHostState
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -508,20 +505,18 @@ fun UserNotLoggedIn(
             onDismiss = { showDialog = false },
             email = email,
             userAction = userAction,
-            context = context
+            context = context,
+            snackBarHostState = snackBarHostState
         )
     }
 
     LaunchedEffect(showSnack) {
+
         Log.d("UserNotLoggedIn", "Show snack: $showSnack")
         if (showSnack) {
             snackBarHostState.currentSnackbarData?.dismiss()
             var msg =
-                context.getString(R.string.email) +
-                        ": " +
-                        email +
-                        " " +
-                        context.getString(R.string.email_invalid)
+                context.getString(R.string.email) + ": " + email + " " + context.getString(R.string.email_invalid)
             if (email.trim().isEmpty()) {
                 msg = context.getString(R.string.email_empty)
             }
@@ -534,8 +529,7 @@ fun UserNotLoggedIn(
         if (loginState.exception.value) {
             snackBarHostState.currentSnackbarData?.dismiss()
             snackBarHostState.showSnackbar(
-                message = loginState.message.value,
-                duration = SnackbarDuration.Long
+                message = loginState.message.value, duration = SnackbarDuration.Long
             )
             loginState.exception.value = false
             loginState.message.value = ""
@@ -543,7 +537,7 @@ fun UserNotLoggedIn(
     }
 
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -555,19 +549,15 @@ fun UserNotLoggedIn(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(mediumDP)
         ) {
-            EmailField(
-                email = email,
+            EmailField(email = email,
                 label = stringResource(id = R.string.email),
                 placeholder = stringResource(id = R.string.enter_email),
-                onEmailChange = { email = it }
-            )
+                onEmailChange = { email = it })
 
-            PasswordField(
-                password = password,
+            PasswordField(password = password,
                 label = stringResource(id = R.string.password),
                 placeholder = stringResource(id = R.string.enter_password),
-                onPasswordChange = { password = it }
-            )
+                onPasswordChange = { password = it })
 
             Spacer(modifier = Modifier.size(mediumDP))
 
@@ -578,9 +568,10 @@ fun UserNotLoggedIn(
                         loginState.message.value = message
                         loginState.exception.value = !result
                     }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) { Text(stringResource(id = R.string.login)) }
+                }, modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(id = R.string.login))
+            }
 
             Row(
                 modifier = Modifier
@@ -592,8 +583,7 @@ fun UserNotLoggedIn(
                 Text(stringResource(id = R.string.no_account))
                 Text(
                     text = stringResource(id = R.string.register),
-                    modifier =
-                    Modifier
+                    modifier = Modifier
                         .padding(start = smallDP)
                         .clickable {
                             keyboardController?.hide()
@@ -606,31 +596,32 @@ fun UserNotLoggedIn(
                 )
             }
 
-            TextButton(
-                onClick = {
-                    // emial corret cormat
-                    if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                        showSnack = true
-                        keyboardController?.hide()
-                    } else {
-                        showDialog = true
-                    }
+            TextButton(onClick = {
+                // emial corret cormat
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    showSnack = true
+                    keyboardController?.hide()
+                } else {
+                    showDialog = true
                 }
-            ) { Text(text = stringResource(id = R.string.password_forgot)) }
+            }) {
+                Text(text = stringResource(id = R.string.password_forgot))
+            }
         }
     }
 }
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun ProfileImage(imageUri: Uri, modifier: Modifier = Modifier) {
+fun ProfileImage(
+    imageUri: Uri, modifier: Modifier = Modifier
+) {
     if (imageUri != Uri.EMPTY) {
         GlideImage(
             model = imageUri,
             contentDescription = "Profile image",
             contentScale = ContentScale.Crop,
-            modifier =
-            modifier
+            modifier = modifier
                 .size((LocalConfiguration.current.screenWidthDp / 2.5).dp)
                 .aspectRatio(1f)
                 .clip(CircleShape),
@@ -638,8 +629,7 @@ fun ProfileImage(imageUri: Uri, modifier: Modifier = Modifier) {
         )
     } else {
         Box(
-            modifier =
-            modifier
+            modifier = modifier
                 .size((LocalConfiguration.current.screenWidthDp / 2.5).dp)
                 .aspectRatio(1f)
                 .clip(CircleShape)
@@ -649,8 +639,7 @@ fun ProfileImage(imageUri: Uri, modifier: Modifier = Modifier) {
                 imageVector = Icons.Filled.Person,
                 contentDescription = "Profile image",
                 tint = MaterialTheme.colorScheme.onPrimary,
-                modifier =
-                Modifier
+                modifier = Modifier
                     .align(Alignment.Center)
                     .size(LocalConfiguration.current.screenWidthDp.dp / 4)
             )
@@ -659,7 +648,9 @@ fun ProfileImage(imageUri: Uri, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun UserLoggedIn(userState: UserState, onLogout: () -> Unit, modifier: Modifier = Modifier) {
+fun UserLoggedIn(
+    userState: UserState, onLogout: () -> Unit, modifier: Modifier = Modifier
+) {
     val imageUri = userState.imageUri.value
     Log.d("UserLoggedIn", "Image URI: $imageUri")
     Column(
@@ -672,7 +663,9 @@ fun UserLoggedIn(userState: UserState, onLogout: () -> Unit, modifier: Modifier 
         ProfileImage(imageUri = imageUri)
         val user = stringResource(id = R.string.user)
         Text(user + ": " + (userState.user.value?.email ?: ""))
-        Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onLogout, modifier = Modifier.fillMaxWidth()
+        ) {
             Text(stringResource(id = R.string.logout))
         }
     }
