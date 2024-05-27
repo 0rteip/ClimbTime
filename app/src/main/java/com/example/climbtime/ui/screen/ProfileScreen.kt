@@ -1,7 +1,10 @@
 package com.example.climbtime.ui.screen
 
-import android.content.Intent
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -51,7 +54,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,6 +72,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationCompat
 import androidx.navigation.NavHostController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -94,40 +97,44 @@ data class LogState(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(
-    userState: UserState, userAction: UserActions, navController: NavHostController
-) {
+fun ProfileScreen(userState: UserState, userAction: UserActions, navController: NavHostController) {
     val snackBarHostState = remember { SnackbarHostState() }
     var editProfile by rememberSaveable { mutableStateOf(false) }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackBarHostState) }, topBar = {
-        TopAppBar(title = {
-            Text(
-                if (editProfile) stringResource(R.string.edit_profile) else if (userState.user.value != null) stringResource(
-                    R.string.profile
-                ) else stringResource(
-                    R.string.login
-                )
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackBarHostState) },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        if (editProfile) stringResource(R.string.edit_profile)
+                        else if (userState.user.value != null)
+                            stringResource(R.string.profile)
+                        else stringResource(R.string.login)
+                    )
+                },
+                actions = {
+                    if (userState.user.value != null && !editProfile) {
+                        IconButton(onClick = { editProfile = !editProfile }) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Edit profile")
+                        }
+                    }
+                    if (!editProfile) {
+                        IconButton(
+                            onClick = {
+                                navController.navigate(ClimbTimeRoute.Settings.route)
+                            }
+                        ) { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
+                    }
+                    if (editProfile) {
+                        IconButton(onClick = { editProfile = !editProfile }) {
+                            Icon(Icons.Filled.Done, contentDescription = "Done")
+                        }
+                    }
+                }
             )
-
-        }, actions = {
-            if (userState.user.value != null && !editProfile) {
-                IconButton(onClick = { editProfile = !editProfile }) {
-                    Icon(Icons.Filled.Edit, contentDescription = "Edit profile")
-                }
-            }
-            if (!editProfile) {
-                IconButton(onClick = { navController.navigate(ClimbTimeRoute.Settings.route) }) {
-                    Icon(Icons.Filled.Settings, contentDescription = "Settings")
-                }
-            }
-            if (editProfile) {
-                IconButton(onClick = { editProfile = !editProfile }) {
-                    Icon(Icons.Filled.Done, contentDescription = "Done")
-                }
-            }
-        })
-    }) { paddingValues ->
+        }
+    ) { paddingValues ->
         if (userState.user.value == null) {
             UserNotLoggedIn(
                 modifier = Modifier.padding(paddingValues),
@@ -156,31 +163,76 @@ fun ProfileScreen(
 
 @Composable
 fun ResetPasswordDialog(
-    onDismiss: () -> Unit, email: String, userAction: UserActions, context: android.content.Context
+    onDismiss: () -> Unit,
+    email: String,
+    userAction: UserActions,
+    context: android.content.Context
 ) {
-    AlertDialog(onDismissRequest = { onDismiss() },
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
         title = { Text(stringResource(id = R.string.reset_password)) },
         text = { Text(stringResource(id = R.string.email_set_to) + " $email") },
         confirmButton = {
-            Button(onClick = {
-                userAction.resetPassword(email) { result, message ->
-                    if (!result) {
-                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                    } else {
-                        onDismiss()
+            Button(
+                onClick = {
+                    userAction.resetPassword(email) { result, message ->
+                        if (!result) {
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        } else {
+                            // create a notification
+                            val notificationId = 1
+                            val notificationChannelId = "reset_password_channel"
+
+                            val notificationBuilder =
+                                NotificationCompat.Builder(
+                                    context,
+                                    notificationChannelId
+                                )
+                                    .setSmallIcon(R.mipmap.ic_launcher)
+                                    .setContentTitle("Reset Password")
+                                    .setContentText("Send a password reset email")
+                                    .setPriority(
+                                        NotificationCompat.PRIORITY_DEFAULT
+                                    )
+
+                            val notificationManager =
+                                context.getSystemService(
+                                    Context.NOTIFICATION_SERVICE
+                                ) as
+                                        NotificationManager
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                val name = "Reset Password Channel"
+                                val descriptionText =
+                                    "Channel for password reset notifications"
+                                val importance = NotificationManager.IMPORTANCE_DEFAULT
+                                val channel =
+                                    NotificationChannel(
+                                        notificationChannelId,
+                                        name,
+                                        importance
+                                    )
+                                        .apply { description = descriptionText }
+                                notificationManager.createNotificationChannel(channel)
+                            }
+
+                            notificationManager.notify(
+                                notificationId,
+                                notificationBuilder.build()
+                            )
+
+                            onDismiss()
+                        }
                     }
                 }
-            }) {
-                Text(stringResource(id = R.string.send))
-            }
+            ) { Text(stringResource(id = R.string.send)) }
         },
         dismissButton = {
             TextButton(
                 onClick = { onDismiss() },
-            ) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        })
+            ) { Text(stringResource(id = R.string.cancel)) }
+        }
+    )
 }
 
 @Composable
@@ -202,7 +254,6 @@ fun EditProfile(
         Log.d("TakeImageOrSelectImage", "URI: $it")
     }
 
-
     if (openSettings) {
         OpenSettings()
     }
@@ -210,11 +261,12 @@ fun EditProfile(
     LaunchedEffect(showSnack) {
         if (showSnack) {
             snackBarHostState.currentSnackbarData?.dismiss()
-            val res = snackBarHostState.showSnackbar(
-                message = context.getString(R.string.camera_permantely_denied),
-                actionLabel = context.getString(R.string.open_settings),
-                duration = SnackbarDuration.Long
-            )
+            val res =
+                snackBarHostState.showSnackbar(
+                    message = context.getString(R.string.camera_permantely_denied),
+                    actionLabel = context.getString(R.string.open_settings),
+                    duration = SnackbarDuration.Long
+                )
             if (res == SnackbarResult.ActionPerformed) {
                 openSettings = true
             }
@@ -222,23 +274,25 @@ fun EditProfile(
         }
     }
 
-    val cameraPermission = rememberPermission(
-        permission = android.Manifest.permission.CAMERA
-    ) {
-        when (it) {
-            PermissionStatus.Unknown -> {}
-            PermissionStatus.Granted -> cameraLauncher.launchCamera()
-            PermissionStatus.Denied -> {
-                Toast.makeText(
-                    context, context.getText(R.string.permisison_denied), Toast.LENGTH_SHORT
-                ).show()
-            }
+    val cameraPermission =
+        rememberPermission(permission = android.Manifest.permission.CAMERA) {
+            when (it) {
+                PermissionStatus.Unknown -> {}
+                PermissionStatus.Granted -> cameraLauncher.launchCamera()
+                PermissionStatus.Denied -> {
+                    Toast.makeText(
+                        context,
+                        context.getText(R.string.permisison_denied),
+                        Toast.LENGTH_SHORT
+                    )
+                        .show()
+                }
 
-            PermissionStatus.PermanentlyDenied -> {
-                showSnack = true
+                PermissionStatus.PermanentlyDenied -> {
+                    showSnack = true
+                }
             }
         }
-    }
 
     fun takePicture() {
         if (cameraPermission.status.isGranted) {
@@ -248,9 +302,10 @@ fun EditProfile(
         }
     }
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { it?.let { userAction.uploadImage(it) } }
+    val launcher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
+            it?.let { userAction.uploadImage(it) }
+        }
 
     var email by rememberSaveable { mutableStateOf(userState.user.value?.email ?: "") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -270,31 +325,34 @@ fun EditProfile(
         modifier = modifier.padding(horizontal = largeDP),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(mediumDP)
-
     ) {
-        ChangeImage(
-            imageUri = imageUri, takePicture = { takePicture() }, launcher = launcher
+        ChangeImage(imageUri = imageUri, takePicture = { takePicture() }, launcher = launcher)
+
+        Spacer(modifier = Modifier.size(largeDP))
+
+        EmailField(
+            email = email,
+            label = stringResource(id = R.string.email),
+            placeholder = stringResource(id = R.string.enter_email),
+            isReadOnly = true,
+            onEmailChange = { email = it }
         )
 
         Spacer(modifier = Modifier.size(largeDP))
 
-        EmailField(email = email,
-            label = stringResource(id = R.string.email),
-            placeholder = stringResource(id = R.string.enter_email),
-            isReadOnly = true,
-            onEmailChange = { email = it })
-
-        Spacer(modifier = Modifier.size(largeDP))
-
-        PasswordField(password = oldPassword,
+        PasswordField(
+            password = oldPassword,
             label = stringResource(id = R.string.old_password),
             placeholder = stringResource(id = R.string.enter_old_password),
-            onPasswordChange = { oldPassword = it })
+            onPasswordChange = { oldPassword = it }
+        )
 
-        PasswordField(password = password,
+        PasswordField(
+            password = password,
             label = stringResource(id = R.string.new_password),
             placeholder = stringResource(id = R.string.enter_new_password),
-            onPasswordChange = { password = it })
+            onPasswordChange = { password = it }
+        )
 
         Spacer(modifier = Modifier.size(largeDP))
 
@@ -306,16 +364,17 @@ fun EditProfile(
                     } else {
                         keyboardController?.hide()
                         Toast.makeText(
-                            context, context.getText(R.string.password_updated), Toast.LENGTH_SHORT
-                        ).show()
+                            context,
+                            context.getText(R.string.password_updated),
+                            Toast.LENGTH_SHORT
+                        )
+                            .show()
                     }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = !(oldPassword.isEmpty() || password.isEmpty())
-        ) {
-            Text(stringResource(id = R.string.change_password))
-        }
+        ) { Text(stringResource(id = R.string.change_password)) }
 
         TextButton(onClick = { showDialog = true }) {
             Text(text = stringResource(id = R.string.password_forgot))
@@ -333,14 +392,19 @@ fun ChangeImage(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .wrapContentSize(), contentAlignment = Alignment.TopCenter
+            .wrapContentSize(),
+        contentAlignment = Alignment.TopCenter
     ) {
         ProfileImage(imageUri = imageUri, modifier = Modifier.align(Alignment.Center))
         IconButton(
             onClick = { takePicture() },
-            modifier = Modifier
+            modifier =
+            Modifier
                 .align(Alignment.BottomEnd)
-                .background(MaterialTheme.colorScheme.primaryContainer, shape = CircleShape)
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer,
+                    shape = CircleShape
+                )
         ) {
             Icon(
                 Icons.Filled.CameraAlt,
@@ -350,10 +414,13 @@ fun ChangeImage(
         }
         IconButton(
             onClick = { launcher.launch("image/*") },
-            modifier = Modifier
+            modifier =
+            Modifier
                 .align(Alignment.BottomStart)
-                .background(MaterialTheme.colorScheme.primaryContainer, shape = CircleShape)
-
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer,
+                    shape = CircleShape
+                )
         ) {
             Icon(
                 Icons.Filled.Image,
@@ -396,29 +463,36 @@ fun PasswordField(
 ) {
     var isPasswordVisible by remember { mutableStateOf(false) }
 
-    OutlinedTextField(value = password,
+    OutlinedTextField(
+        value = password,
         onValueChange = onPasswordChange,
         leadingIcon = { Icon(imageVector = Icons.Filled.Key, contentDescription = null) },
         trailingIcon = {
             IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                 Icon(
-                    imageVector = if (isPasswordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    imageVector =
+                    if (isPasswordVisible) Icons.Filled.VisibilityOff
+                    else Icons.Filled.Visibility,
                     contentDescription = null
                 )
             }
         },
         singleLine = true,
-        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        visualTransformation =
+        if (isPasswordVisible) VisualTransformation.None
+        else PasswordVisualTransformation(),
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        placeholder = { Text(placeholder) })
-
+        placeholder = { Text(placeholder) }
+    )
 }
 
 @Composable
 fun UserNotLoggedIn(
-    modifier: Modifier = Modifier, userAction: UserActions, snackBarHostState: SnackbarHostState
+    modifier: Modifier = Modifier,
+    userAction: UserActions,
+    snackBarHostState: SnackbarHostState
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -439,12 +513,15 @@ fun UserNotLoggedIn(
     }
 
     LaunchedEffect(showSnack) {
-
         Log.d("UserNotLoggedIn", "Show snack: $showSnack")
         if (showSnack) {
             snackBarHostState.currentSnackbarData?.dismiss()
             var msg =
-                context.getString(R.string.email) + ": " + email + " " + context.getString(R.string.email_invalid)
+                context.getString(R.string.email) +
+                        ": " +
+                        email +
+                        " " +
+                        context.getString(R.string.email_invalid)
             if (email.trim().isEmpty()) {
                 msg = context.getString(R.string.email_empty)
             }
@@ -457,7 +534,8 @@ fun UserNotLoggedIn(
         if (loginState.exception.value) {
             snackBarHostState.currentSnackbarData?.dismiss()
             snackBarHostState.showSnackbar(
-                message = loginState.message.value, duration = SnackbarDuration.Long
+                message = loginState.message.value,
+                duration = SnackbarDuration.Long
             )
             loginState.exception.value = false
             loginState.message.value = ""
@@ -477,15 +555,19 @@ fun UserNotLoggedIn(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(mediumDP)
         ) {
-            EmailField(email = email,
+            EmailField(
+                email = email,
                 label = stringResource(id = R.string.email),
                 placeholder = stringResource(id = R.string.enter_email),
-                onEmailChange = { email = it })
+                onEmailChange = { email = it }
+            )
 
-            PasswordField(password = password,
+            PasswordField(
+                password = password,
                 label = stringResource(id = R.string.password),
                 placeholder = stringResource(id = R.string.enter_password),
-                onPasswordChange = { password = it })
+                onPasswordChange = { password = it }
+            )
 
             Spacer(modifier = Modifier.size(mediumDP))
 
@@ -496,10 +578,9 @@ fun UserNotLoggedIn(
                         loginState.message.value = message
                         loginState.exception.value = !result
                     }
-                }, modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(id = R.string.login))
-            }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(stringResource(id = R.string.login)) }
 
             Row(
                 modifier = Modifier
@@ -511,7 +592,8 @@ fun UserNotLoggedIn(
                 Text(stringResource(id = R.string.no_account))
                 Text(
                     text = stringResource(id = R.string.register),
-                    modifier = Modifier
+                    modifier =
+                    Modifier
                         .padding(start = smallDP)
                         .clickable {
                             keyboardController?.hide()
@@ -524,32 +606,31 @@ fun UserNotLoggedIn(
                 )
             }
 
-            TextButton(onClick = {
-                // emial corret cormat
-                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                    showSnack = true
-                    keyboardController?.hide()
-                } else {
-                    showDialog = true
+            TextButton(
+                onClick = {
+                    // emial corret cormat
+                    if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                        showSnack = true
+                        keyboardController?.hide()
+                    } else {
+                        showDialog = true
+                    }
                 }
-            }) {
-                Text(text = stringResource(id = R.string.password_forgot))
-            }
+            ) { Text(text = stringResource(id = R.string.password_forgot)) }
         }
     }
 }
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun ProfileImage(
-    imageUri: Uri, modifier: Modifier = Modifier
-) {
+fun ProfileImage(imageUri: Uri, modifier: Modifier = Modifier) {
     if (imageUri != Uri.EMPTY) {
         GlideImage(
             model = imageUri,
             contentDescription = "Profile image",
             contentScale = ContentScale.Crop,
-            modifier = modifier
+            modifier =
+            modifier
                 .size((LocalConfiguration.current.screenWidthDp / 2.5).dp)
                 .aspectRatio(1f)
                 .clip(CircleShape),
@@ -557,7 +638,8 @@ fun ProfileImage(
         )
     } else {
         Box(
-            modifier = modifier
+            modifier =
+            modifier
                 .size((LocalConfiguration.current.screenWidthDp / 2.5).dp)
                 .aspectRatio(1f)
                 .clip(CircleShape)
@@ -567,7 +649,8 @@ fun ProfileImage(
                 imageVector = Icons.Filled.Person,
                 contentDescription = "Profile image",
                 tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier
+                modifier =
+                Modifier
                     .align(Alignment.Center)
                     .size(LocalConfiguration.current.screenWidthDp.dp / 4)
             )
@@ -576,9 +659,7 @@ fun ProfileImage(
 }
 
 @Composable
-fun UserLoggedIn(
-    userState: UserState, onLogout: () -> Unit, modifier: Modifier = Modifier
-) {
+fun UserLoggedIn(userState: UserState, onLogout: () -> Unit, modifier: Modifier = Modifier) {
     val imageUri = userState.imageUri.value
     Log.d("UserLoggedIn", "Image URI: $imageUri")
     Column(
@@ -591,9 +672,7 @@ fun UserLoggedIn(
         ProfileImage(imageUri = imageUri)
         val user = stringResource(id = R.string.user)
         Text(user + ": " + (userState.user.value?.email ?: ""))
-        Button(
-            onClick = onLogout, modifier = Modifier.fillMaxWidth()
-        ) {
+        Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(id = R.string.logout))
         }
     }
