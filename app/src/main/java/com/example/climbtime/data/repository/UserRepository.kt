@@ -127,11 +127,13 @@ class UserRepository(
             callback(false, message)
             return
         }
+        this.deleteLocations(email, password)
         auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                user.value = null
                 auth.currentUser?.delete()?.addOnCompleteListener { deleteTask ->
                     if (deleteTask.isSuccessful) {
+                        deleteUserImage()
+                        user.value = null
                         callback(true, "")
                     } else {
                         callback(false, deleteTask.exception?.message ?: "")
@@ -139,6 +141,20 @@ class UserRepository(
                 }
             } else {
                 callback(false, task.exception?.message ?: "")
+            }
+        }
+    }
+
+    fun deleteLocations(email: String, password: String) {
+        val (isValid, _) = validData(email, password)
+        if (!isValid) {
+            return
+        }
+        auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                removeAllLocations()
+            } else {
+                Log.e("UserRepository", "Failed to login: ${task.exception?.message}")
             }
         }
     }
@@ -157,7 +173,6 @@ class UserRepository(
         val storageRef = store.reference.child("$USER_IMAGE_KEY/${user.value?.uid}")
         storageRef.delete().addOnSuccessListener {
             userImageUri.value = Uri.EMPTY
-//            Log.d("UserRepository", "Image deleted successfully")
         }.addOnFailureListener { exception ->
             Log.e("UserRepository", "Failed to delete image: ${exception.message}")
         }
@@ -178,7 +193,8 @@ class UserRepository(
         if (user != null) {
             val userDocument = firestore.collection(USERS_COLLECTION).document(user.uid)
             userDocument.set(
-                mapOf(SAVED_LOCATIONS_KEY to FieldValue.arrayUnion(location)), SetOptions.merge()
+                mapOf(SAVED_LOCATIONS_KEY to FieldValue.arrayUnion(location)),
+                SetOptions.merge()
             ).addOnSuccessListener {
                 val currentLocations = savedLocations.value.toMutableList()
                 currentLocations.add(location)
@@ -197,7 +213,8 @@ class UserRepository(
         val user = auth.currentUser
         if (user != null) {
             firestore.collection(USERS_COLLECTION).document(user.uid)
-                .update(SAVED_LOCATIONS_KEY, FieldValue.arrayRemove(location)).addOnSuccessListener {
+                .update(SAVED_LOCATIONS_KEY, FieldValue.arrayRemove(location))
+                .addOnSuccessListener {
                     val currentLocations = savedLocations.value.toMutableList()
                     currentLocations.remove(location)
                     savedLocations.value = currentLocations
@@ -206,6 +223,24 @@ class UserRepository(
                     Log.e(
                         "UserRepository",
                         "Failed to remove location from Firestore: ${exception.message}"
+                    )
+                }
+        }
+    }
+
+    private fun removeAllLocations() {
+        val user = auth.currentUser
+        // delete all user location, docuemnt
+        if (user != null) {
+            firestore.collection(USERS_COLLECTION).document(user.uid)
+                .delete().addOnSuccessListener {
+                    savedLocations.value = listOf()
+//                    Log.d("UserRepository", "All locations removed successfully from Firestore")
+                }
+                .addOnFailureListener { exception ->
+                    Log.e(
+                        "UserRepository",
+                        "Failed to remove all locations from Firestore: ${exception.message}"
                     )
                 }
         }

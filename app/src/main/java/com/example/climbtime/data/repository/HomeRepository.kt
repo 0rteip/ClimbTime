@@ -110,7 +110,6 @@ class HomeRepository(
                             if (allPlaces.value.none { place -> place.id == document.id }) {
                                 allPlaces.value =
                                     allPlaces.value.plus(fromDocument(document, it.filterName))
-                                Log.d("filer", it.filterName)
                             }
                         }
 
